@@ -8,12 +8,26 @@ description: |
   当用户说"扫B站收藏"/"扫描知识星球"/"记一下"/"收藏这篇文章"等时触发。
   触发词：微信文章、公众号文章、解析文章、收藏文章、B站收藏、B站视频、视频字幕、
   知识星球、Get笔记、录音笔记、已保存文章、知乎、小红书、随笔、灵感、纪要、待办、
-  记一下、收藏、采集、scan、parse、note、内容中心、AI Content Hub
+  记一下、收藏、采集、scan、parse、note、内容中心、AI Content Hub、
+  安装ai-content-hub、配置ai-content-hub
 ---
 
 # AI Content Hub Skill
 
 > 你的收藏不该积灰。自动采集散落在各平台的内容，统一入库、一键同步。
+
+## 支持的AI助手平台
+
+本 Skill 可在以下平台使用：
+
+| 平台 | 使用方式 |
+|------|---------|
+| 🦞 OpenClaw（小龙虾） | ClawHub安装 / 发消息触发 |
+| 🏛️ Hermes Agent | Skill自动加载 |
+| 🐧 QClaw（企鹅龙虾） | 技能市场安装 / 微信发消息触发 |
+| 💼 WorkBuddy | Skill自动加载 / MCP模式 |
+| 🤖 Claude Desktop | MCP Server模式 |
+| 🔧 Cursor / Windsurf / Cline | MCP Server模式 |
 
 ## 安装
 
@@ -41,6 +55,12 @@ ai-content-hub init
 3. 配置各通道的认证信息（Cookie/Token/API Key）
 4. 配置输出目标（Obsidian/Notion/飞书）
 
+**快速模式**（只启用免配置通道）：
+
+```bash
+ai-content-hub init --quick
+```
+
 **重要：init 命令会逐项询问配置，请引导用户完成。**
 
 ### 验证安装
@@ -50,6 +70,25 @@ ai-content-hub status
 ```
 
 如果显示各通道状态表格，说明安装成功。
+
+### MCP Server 模式
+
+```bash
+ai-content-hub mcp
+```
+
+然后在 AI 客户端（Claude Desktop / Cursor / Cline 等）的 MCP 配置中添加：
+
+```json
+{
+  "mcpServers": {
+    "ai-content-hub": {
+      "command": "ai-content-hub",
+      "args": ["mcp"]
+    }
+  }
+}
+```
 
 ## 使用方式
 
@@ -113,12 +152,7 @@ ai-content-hub status
 
 ### 📺 B站（需扫码登录）
 
-首次使用需要扫码登录获取凭证：
-
-```bash
-# 启动扫码登录（会弹出二维码）
-python -c "from ai_content_hub.channels.bilibili import BilibiliChannel; ..."
-```
+首次使用需要扫码登录获取凭证。运行 `ai-content-hub scan --channel bilibili` 时会自动引导扫码。
 
 配置项：
 - `credential_path`: bilibili_api凭证JSON文件路径

@@ -38,48 +38,101 @@
 | 8个平台全覆盖 | 微信文章/知乎回答/小红书笔记 | 8种分类，AI自动推断 |
 | | | 🔐 密码类加密存储，📎 临时转发7天过期 |
 
-| 📤 统一输出 | 🤖 AI客户端直连 |
+| 📤 统一输出 | 🤖 AI助手直连 |
 |:---:|:---:|
-| 本地Markdown / Obsidian | MCP Server，Claude/ChatGPT/OpenClaw直接调用 |
+| 本地Markdown / Obsidian | MCP Server，AI助手直接调用 |
 | Notion Database | 发一条消息就能采集，说一句话就能记录 |
 | 飞书知识库 + 群卡片 | |
 
-## 🚀 30秒安装
+## 🚀 安装
 
-### 方式一：命令行安装
+### 方式一：一句话让AI助手帮你装（推荐 ✨）
+
+如果你在用任何支持 MCP 或 Skill 的 AI 助手，只需**复制下面这句话发给它**，它会自动帮你完成安装、配置、验证：
+
+> 📋 **复制这条信息发给你的AI助手：**
+>
+> ```
+> 帮我安装 ai-content-hub：pip install ai-content-hub[all]，然后运行 ai-content-hub init 引导我配置。项目文档在 https://github.com/dalimaoya/ai-content-hub
+> ```
+
+**支持这个安装方式的AI助手**（持续增加中）：
+
+| AI 助手 | 安装方式 | 说明 |
+|---------|---------|------|
+| 🦞 **OpenClaw（小龙虾）** | 发消息 → 自动安装 | 开源AI Agent，6.8万⭐，ClawHub 1700+技能 |
+| 🏛️ **Hermes Agent** | 发消息 → 自动安装 | 自进化AI Agent，4.7万⭐，自动生成Skill |
+| 🐧 **QClaw（企鹅龙虾）** | 发消息 → 自动安装 | 腾讯出品，微信直连，零门槛 |
+| 💼 **WorkBuddy** | 发消息 → 自动安装 | 腾讯桌面智能体，兼容龙虾Skills + MCP |
+| 🤖 **Claude Desktop** | MCP模式 | Anthropic官方客户端，MCP原生支持 |
+| 🔧 **Cursor** | MCP模式 | AI IDE，配置MCP Server后可用 |
+| 🌊 **Windsurf** | MCP模式 | AI IDE，配置MCP Server后可用 |
+| 📝 **Cline / Roo Code** | MCP模式 | VS Code插件，配置MCP Server后可用 |
+
+> 💡 **原理**：这些AI助手都能理解自然语言指令，执行终端命令，读取项目文档并引导你完成配置。你只需要说一句话，剩下的交给它。
+
+### 方式二：命令行安装
 
 ```bash
 # 安装（按需选择通道）
 pip install ai-content-hub[bilibili,wechat,zsxq,getnote]
 
-# 初始化配置
+# 初始化配置（交互式引导）
 ai-content-hub init
+
+# 快速模式（只启用免配置通道，30秒上手）
+ai-content-hub init --quick
 
 # 开始采集！
 ai-content-hub scan
 ```
 
-### 方式二：用AI助手安装（推荐）
-
-如果你在用 **OpenClaw / Hermes / QClaw** 等 AI 助手，只需把下面这段话发给它：
-
-> 📋 **复制这条信息给你的AI助手，会自动完成安装和配置引导：**
->
-> ```
-> 帮我安装 ai-content-hub：pip install ai-content-hub[all]
-> 然后运行 ai-content-hub init 引导我配置。项目文档在 https://github.com/dalimaoya/ai-content-hub
-> ```
-
-AI 助手会自动帮你安装包、运行配置向导、测试连接，全程引导。
-
 ### 方式三：MCP 模式（给AI客户端装上采集能力）
+
+适合 Claude Desktop、Cursor、Cline 等 MCP 客户端：
 
 ```bash
 # 启动MCP Server
 ai-content-hub mcp
 ```
 
-然后在你的 AI 客户端配置中添加 MCP Server，就能直接用自然语言控制采集了。
+然后在你的 AI 客户端配置中添加 MCP Server 地址，就能直接用自然语言控制采集了。
+
+<details>
+<summary>📖 Claude Desktop 配置示例</summary>
+
+编辑 `~/Library/Application Support/Claude/claude_desktop_config.json`（macOS）或 `%APPDATA%\Claude\claude_desktop_config.json`（Windows）：
+
+```json
+{
+  "mcpServers": {
+    "ai-content-hub": {
+      "command": "ai-content-hub",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>📖 Cursor / Windsurf / Cline 配置示例</summary>
+
+在设置中找到 MCP Server 配置项，添加：
+
+```json
+{
+  "mcpServers": {
+    "ai-content-hub": {
+      "command": "ai-content-hub",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+</details>
 
 ## 📡 支持的平台
 
@@ -164,22 +217,18 @@ ai-content-hub sync --notion
 ai-content-hub sync --feishu
 ```
 
-## 🤖 MCP Server — 让AI帮你管理知识
+### 在AI助手中使用（MCP模式）
 
-```bash
-ai-content-hub mcp
-```
+如果你的AI助手已配置MCP Server，直接用自然语言：
 
-AI客户端可通过MCP协议直接调用：
-
-| 工具 | 说明 | 示例 |
-|------|------|------|
-| `scan_channel` | 扫描指定通道 | "扫一下我的B站收藏" |
-| `parse_url` | 解析URL | "帮我存这篇文章" |
-| `quick_note` | 快速记录 | "记一下：明天开会" |
-| `get_status` | 查看状态 | "目前收了多少内容" |
-| `get_daily_summary` | 今日摘要 | "今天有什么新内容" |
-| `search_content` | 搜索内容 | "我之前收藏过关于RAG的内容吗" |
+| 你说的话 | AI助手做的事 |
+|---------|------------|
+| "扫一下我的B站收藏" | 调用 `scan_channel` |
+| "帮我存这篇文章" + URL | 调用 `parse_url` |
+| "记一下：明天开会" | 调用 `quick_note` |
+| "我之前收藏过关于RAG的内容吗" | 调用 `search_content` |
+| "今天有什么新内容" | 调用 `get_daily_summary` |
+| "目前收了多少内容" | 调用 `get_status` |
 
 ## 🏗️ 架构
 
@@ -194,6 +243,8 @@ AI客户端可通过MCP协议直接调用：
     ├── 📕 小红书 ──┤     │ 统一采集    │     │ 💬 飞书      │
     ├── ✍️ 随笔   ──┤     │ 统一格式    │     └──────────────┘
     └── 💬 微信聊天 ──┘     │ 自动去重    │
+                          │  ┃ MCP     │
+                          │  ┃ Server  │──→ AI助手直接调用
                           └─────────────┘
 ```
 
@@ -201,6 +252,7 @@ AI客户端可通过MCP协议直接调用：
 
 - **插件化** — 每个通道/输出都是独立插件，按需安装
 - **统一数据模型** — `ContentItem` 是唯一格式，存/搜/输出只写一套
+- **MCP原生** — 内置MCP Server，AI助手开箱即用
 - **事件驱动** — 采集完成、新内容入库等事件交给你的AI助手处理
 - **零侵入** — 通知走Agent原生通道，不强绑定任何IM
 
@@ -256,6 +308,8 @@ docker compose up -d
 
 ## 🙏 致谢
 
+- [OpenClaw](https://github.com/openclaw/openclaw) — 开源AI Agent框架
+- [Hermes Agent](https://github.com/NousResearch/Hermes-Agent) — 自进化AI Agent
 - [bilibili-api-python](https://github.com/Nemo2011/bilibili-api) — B站API SDK
 - [PyWxDump](https://github.com/xaoyaoo/PyWxDump) — 微信数据库解密
 - [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler) — 多平台采集参考
@@ -278,7 +332,32 @@ You bookmark videos on Bilibili, save articles on WeChat, upvote answers on Zhih
 
 AI Content Hub automatically collects content from all your platforms, unifies it into one place, and syncs to your knowledge base.
 
-## Quick Start
+## Install
+
+### Option 1: One Sentence to Your AI Assistant (Recommended ✨)
+
+If you're using any AI assistant that supports MCP or Skills, just **send this message** — it will handle installation, configuration, and verification for you:
+
+> 📋 **Copy and send to your AI assistant:**
+>
+> ```
+> Install ai-content-hub for me: pip install ai-content-hub[all], then run ai-content-hub init to guide me through setup. Docs: https://github.com/dalimaoya/ai-content-hub
+> ```
+
+**Works with** (and growing):
+
+| AI Assistant | How | Notes |
+|-------------|-----|-------|
+| 🦞 **OpenClaw** | Send message → auto install | Open-source AI Agent, 68k⭐, 1700+ skills |
+| 🏛️ **Hermes Agent** | Send message → auto install | Self-improving AI Agent, 47k⭐ |
+| 🐧 **QClaw** | Send message → auto install | By Tencent, WeChat integration |
+| 💼 **WorkBuddy** | Send message → auto install | By Tencent, OpenClaw Skills + MCP compatible |
+| 🤖 **Claude Desktop** | MCP mode | Anthropic's official client |
+| 🔧 **Cursor** | MCP mode | AI IDE with MCP support |
+| 🌊 **Windsurf** | MCP mode | AI IDE with MCP support |
+| 📝 **Cline / Roo Code** | MCP mode | VS Code extensions with MCP |
+
+### Option 2: Command Line
 
 ```bash
 pip install ai-content-hub[bilibili,wechat,quicknote]
@@ -286,13 +365,13 @@ ai-content-hub init
 ai-content-hub scan
 ```
 
-### For AI Assistant Users (OpenClaw / Claude / etc.)
+### Option 3: MCP Mode
 
-Send this to your AI assistant:
+```bash
+ai-content-hub mcp
+```
 
-> Install ai-content-hub for me: `pip install ai-content-hub[all]`
-> Then run `ai-content-hub init` to guide me through setup.
-> Docs: https://github.com/dalimaoya/ai-content-hub
+Then add the MCP Server to your AI client's configuration.
 
 ## Supported Platforms
 
