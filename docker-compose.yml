@@ -1,0 +1,32 @@
+# AI Content Hub Docker Compose
+# 用法: docker compose up -d
+
+version: "3.8"
+
+services:
+  ai-content-hub:
+    build: .
+    container_name: ai-content-hub
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "8765:8765"  # MCP Server端口
+
+  # 定时扫描（使用cron）
+  scanner:
+    build: .
+    container_name: ai-content-hub-scanner
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
+      - SCAN_CHANNELS=bilibili,zsxq,getnote
+      - SCAN_INTERVAL=14400  # 4小时（秒）
+    entrypoint: ["python", "-m", "ai_content_hub.cli", "scan", "--all", "--config", "/app/config/config.yaml"]
+    # 注意：定时扫描建议用系统crontab或Agent自动化，这里只是示例

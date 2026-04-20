@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-content-hub"
+version = "0.1.0"
+description = "个人知识采集中枢 — 多平台内容统一采集、整理、同步"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "AI Content Hub Contributors" },
+]
+keywords = ["knowledge-management", "content-aggregation", "obsidian", "notion", "bilibili", "wechat"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "httpx>=0.27",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+# 采集通道
+bilibili = ["bilibili-api-python>=17.4"]
+wechat = ["readability-lxml>=0.8", "lxml>=5.0"]
+zsxq = []
+getnote = []
+zhihu = []
+xiaohongshu = []
+douyin = []
+youtube = ["youtube-transcript-api>=0.6", "yt-dlp>=2024.1"]
+rss = ["feedparser>=6.0"]
+quicknote = ["cryptography>=42.0"]
+wechat-chat = []
+# 输出
+notion = ["notion-client>=2.0"]
+feishu = []
+# MCP
+mcp = ["mcp>=1.0"]
+# 组合
+all = [
+    "ai-content-hub[bilibili,wechat,zsxq,getnote,quicknote,rss,notion,feishu,mcp]",
+]
+# 开发
+dev = ["pytest", "pytest-asyncio", "ruff", "mypy"]
+
+[project.scripts]
+ai-content-hub = "ai_content_hub.cli:app"
+
+[project.entry-points."ai_content_hub.channels"]
+bilibili = "ai_content_hub.channels.bilibili:BilibiliChannel"
+wechat = "ai_content_hub.channels.wechat:WechatChannel"
+zsxq = "ai_content_hub.channels.zsxq:ZsxqChannel"
+getnote = "ai_content_hub.channels.getnote:GetNoteChannel"
+quicknote = "ai_content_hub.channels.quicknote:QuickNoteChannel"
+zhihu = "ai_content_hub.channels.zhihu:ZhihuChannel"
+xiaohongshu = "ai_content_hub.channels.xiaohongshu:XiaohongshuChannel"
+wechat-chat = "ai_content_hub.channels.wechat_chat:WechatChatChannel"
+
+[project.entry-points."ai_content_hub.outputs"]
+notion = "ai_content_hub.outputs.notion_output:NotionOutput"
+feishu = "ai_content_hub.outputs.feishu_output:FeishuOutput"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_content_hub"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

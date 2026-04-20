@@ -1,0 +1,97 @@
+# AI Content Hub 配置示例
+# 复制为 config.yaml 并填入真实值
+# 支持 ${ENV_VAR} 引用环境变量
+
+# 数据存储路径
+data_dir: ./data
+
+# 采集通道
+channels:
+  bilibili:
+    enabled: false
+    credential_path: ""          # bilibili_api凭证JSON文件路径
+    uid: 0                       # B站用户UID
+    # favorite_ids: []           # 指定收藏夹ID，空=全部
+
+  wechat:
+    enabled: true                # 微信文章无需额外配置，发链接即触发
+
+  zsxq:
+    enabled: false
+    access_token: ${ZSXQ_ACCESS_TOKEN}
+    # group_ids: []              # 指定星球ID，空=全部
+
+  getnote:
+    enabled: false
+    api_key: ${GETNOTE_API_KEY}
+    client_id: ${GETNOTE_CLIENT_ID}
+    # sync_note_types: ["plain_text", "link", "recorder_audio", "img_text"]
+
+  zhihu:
+    enabled: false
+    cookie: ${ZHIHU_COOKIE}
+
+  xiaohongshu:
+    enabled: false
+    cookie: ${XHS_COOKIE}
+
+  douyin:
+    enabled: false
+    cookie: ${DOUYIN_COOKIE}
+    auto_transcribe: false       # 视频转录消耗较大，默认关闭
+
+  youtube:
+    enabled: false
+    api_key: ${YOUTUBE_API_KEY}
+    auto_subtitle: true
+
+  rss:
+    enabled: false
+    feeds: []
+    # feeds:
+    #   - name: "阮一峰博客"
+    #     url: "http://www.ruanyifeng.com/blog/atom.xml"
+
+  quick_note:
+    enabled: true                # 随笔记录默认启用
+
+  wechat-chat:
+    enabled: false
+    wx_dir: ""                   # 微信数据目录（Windows自动检测）
+    merge_dir: ""                # 解密后数据库目录（可选）
+    # contacts: []               # 指定联系人wxid，空=全部
+    # contact_names: []          # 指定联系人昵称
+    # msg_types: [1, 49]         # 消息类型: 1=文本, 49=引用/链接
+
+# 输出目标
+outputs:
+  # Obsidian同步路径（通过local_md输出实现）
+  obsidian_vault_path: ""        # 如 D:\notes
+
+  notion:
+    enabled: false
+    api_key: ${NOTION_API_KEY}
+    parent_page_id: ""           # 父页面ID
+    # databases: {}              # 通道→Database ID映射，空=自动创建
+
+  feishu:
+    enabled: false
+    app_id: ${FEISHU_APP_ID}
+    app_secret: ${FEISHU_APP_SECRET}
+    chat_id: ${FEISHU_CHAT_ID}
+    wiki_space_id: ""            # 知识库空间ID
+    daily_card: true             # 启用日报卡片
+
+# 事件/通知
+events:
+  # 事件文件（追加写入，一行一个JSON，供外部程序监听）
+  event_file: ""
+  # Webhook URL（POST HubEvent到此URL）
+  webhook_url: ""
+
+# 定时任务（CLI模式用，Docker用cron，Agent用内置调度）
+schedule:
+  bilibili: "0 */4 * * *"       # 每4小时
+  zsxq: "0 */2 * * *"          # 每2小时
+  getnote: "0 */2 * * *"       # 每2小时
+  rss: "0 */6 * * *"           # 每6小时
