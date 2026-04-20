@@ -53,15 +53,50 @@ def _discover_plugins(registry: ChannelRegistry | OutputRegistry) -> int:
 
 # ─── init ────────────────────────────────────────────────────────
 
+# 通道定义：(name, 显示名, 是否需要凭据, 凭据提示)
+_CHANNELS = [
+    ("bilibili", "📺 B站收藏", True, "B站用户UID"),
+    ("wechat", "📰 微信文章（发链接即触发，无需配置）", False, ""),
+    ("zsxq", "🌐 知识星球", True, "知识星球Access Token"),
+    ("getnote", "📝 Get笔记", True, "Get笔记API Key"),
+    ("zhihu", "💡 知乎", True, "知乎Cookie"),
+    ("xiaohongshu", "📕 小红书", True, "小红书Cookie"),
+    ("douyin", "🎵 抖音", True, "抖音Cookie"),
+    ("youtube", "📺 YouTube", True, "YouTube API Key"),
+    ("rss", "📡 RSS", False, ""),
+    ("quicknote", "✍️ 随笔记录（灵感/纪要/待办等，无需配置）", False, ""),
+    ("wechat-chat", "💬 微信聊天记录（仅Windows）", True, "微信数据目录路径"),
+]
+
+
 @app.command()
 def init(
     config_path: Annotated[Optional[str], typer.Option(help="配置文件路径")] = None,
+    quick: Annotated[bool, typer.Option("--quick", "-q", help="快速模式（仅启用免配置通道）")] = False,
 ):
     """🚀 初始化配置（交互式引导）"""
     console.print("[bold cyan]🚀 AI Content Hub 初始化配置[/bold cyan]")
+    console.print("[dim]你的收藏不该积灰。让AI Content Hub帮你自动采集、整理、同步。[/dim]")
     console.print()
 
     config = HubConfig()
+
+    if quick:
+        # 快速模式：启用所有免配置通道
+        console.print("[cyan]⚡ 快速模式 — 启用所有免配置通道[/cyan]")
+        data_dir = "./data"
+        config.set("data_dir", data_dir)
+        for ch_name, _, needs_cred, _ in _CHANNELS:
+            config.set(f"channels.{ch_name}.enabled", not needs_cred)
+        save_path = config_path or "./config.yaml"
+        config.save(save_path)
+        console.print(f"\n[green]✅ 配置已保存到 {save_path}[/green]")
+        console.print("[cyan]已启用: 微信文章、随笔记录[/cyan]")
+        console.print("[dim]想添加更多通道？运行 ai-content-hub init 进行完整配置[/dim]")
+        console.print("[dim]现在就可以: ai-content-hub parse \"微信文章URL\"[/dim]")
+        return
+
+    # 完整配置模式
     data_dir = typer.prompt("📁 数据存储路径", default="./data")
     config.set("data_dir", data_dir)
 
@@ -69,22 +104,57 @@ def init(
     if obsidian_vault:
         config.set("outputs.obsidian_vault_path", obsidian_vault)
 
-    console.print("\n[bold]── 采集通道配置 ──[/bold]")
+    console.print("\n[bold]── 采集通道 ──[/bold]")
+    console.print("[dim]选择你想启用的通道，稍后可以随时修改配置文件[/dim]")
 
-    for ch_name, ch_label in [
-        ("bilibili", "📺 B站收藏"),
-        ("wechat", "📰 微信文章"),
-        ("zsxq", "🌐 知识星球"),
-        ("getnote", "📝 Get笔记"),
-        ("zhihu", "💡 知乎"),
-        ("xiaohongshu", "📕 小红书"),
-        ("douyin", "🎵 抖音"),
-        ("youtube", "📺 YouTube"),
-        ("rss", "📡 RSS"),
-        ("quicknote", "✍️ 随笔记录"),
-    ]:
-        enabled = typer.confirm(f"  {ch_label}", default=False)
+    enabled_channels = []
+    for ch_name, ch_label, needs_cred, cred_hint in _CHANNELS:
+        default_val = not needs_cred  # 免配置通道默认启用
+        enabled = typer.confirm(f"  {ch_label}", default=default_val)
         config.set(f"channels.{ch_name}.enabled", enabled)
+        if enabled:
+            enabled_channels.append((ch_name, needs_cred, cred_hint))
+
+    # 对需要凭据的通道，引导配置
+    needs_config = [(n, h) for n, nc, h in enabled_channels if nc and h]
+    if needs_config:
+        console.print("\n[bold]── 凭据配置 ──[/bold]")
+        console.print("[dim]现在配置凭据，或之后编辑 config.yaml[/dim]")
+
+        for ch_name, hint in needs_config:
+            console.print(f"\n  [cyan]{ch_name}[/cyan]")
+            if ch_name == "bilibili":
+                uid = typer.prompt("  B站用户UID", default="")
+                if uid:
+                    config.set(f"channels.{ch_name}.uid", int(uid) if uid.isdigit() else uid)
+                console.print("  [dim]💡 B站首次使用需要扫码登录，运行 scan 时会自动引导[/dim]")
+            elif ch_name == "zsxq":
+                token = typer.prompt("  知识星球Access Token", default="")
+                if token:
+                    config.set(f"channels.{ch_name}.access_token", token)
+                console.print("  [dim]💡 获取方式: 浏览器登录知识星球 → F12 → Cookies → zsxq_access_token[/dim]")
+            elif ch_name == "getnote":
+                api_key = typer.prompt("  Get笔记API Key", default="")
+                client_id = typer.prompt("  Get笔记Client ID", default="")
+                if api_key:
+                    config.set(f"channels.{ch_name}.api_key", api_key)
+                if client_id:
+                    config.set(f"channels.{ch_name}.client_id", client_id)
+                console.print("  [dim]💡 获取方式: https://www.biji.com/openapi[/dim]")
+            elif ch_name in ("zhihu", "xiaohongshu", "douyin"):
+                cookie = typer.prompt(f"  {hint}", default="")
+                if cookie:
+                    config.set(f"channels.{ch_name}.cookie", cookie)
+                console.print("  [dim]💡 获取方式: 浏览器登录 → F12 → Network → 复制Cookie[/dim]")
+            elif ch_name == "youtube":
+                api_key = typer.prompt("  YouTube API Key", default="")
+                if api_key:
+                    config.set(f"channels.{ch_name}.api_key", api_key)
+            elif ch_name == "wechat-chat":
+                wx_dir = typer.prompt("  微信数据目录", default="")
+                if wx_dir:
+                    config.set(f"channels.{ch_name}.wx_dir", wx_dir)
+                console.print("  [dim]💡 首次使用需运行PyWxDump解密数据库[/dim]")
 
     console.print("\n[bold]── 输出配置 ──[/bold]")
 
@@ -94,12 +164,39 @@ def init(
     ]:
         enabled = typer.confirm(f"  {out_label}", default=False)
         config.set(f"outputs.{out_name}.enabled", enabled)
+        if enabled and out_name == "notion":
+            api_key = typer.prompt("  Notion API Key", default="")
+            if api_key:
+                config.set(f"outputs.{out_name}.api_key", api_key)
+            console.print("  [dim]💡 获取方式: https://www.notion.so/my-integrations[/dim]")
+        elif enabled and out_name == "feishu":
+            app_id = typer.prompt("  飞书App ID", default="")
+            app_secret = typer.prompt("  飞书App Secret", default="")
+            chat_id = typer.prompt("  飞书群Chat ID", default="")
+            if app_id:
+                config.set(f"outputs.{out_name}.app_id", app_id)
+            if app_secret:
+                config.set(f"outputs.{out_name}.app_secret", app_secret)
+            if chat_id:
+                config.set(f"outputs.{out_name}.chat_id", chat_id)
 
     # 保存
     save_path = config_path or "./config.yaml"
     config.save(save_path)
     console.print(f"\n[green]✅ 配置已保存到 {save_path}[/green]")
-    console.print("[cyan]运行 `ai-content-hub scan` 开始首次采集[/cyan]")
+
+    # 给出下一步指引
+    free_channels = [n for n, nc, _ in enabled_channels if not nc]
+    cred_channels = [n for n, nc, _ in enabled_channels if nc]
+
+    console.print("\n[bold]── 下一步 ──[/bold]")
+    if free_channels:
+        console.print(f"[cyan]→ 立即可用: ai-content-hub scan --channel {free_channels[0]}[/cyan]")
+    if cred_channels:
+        console.print(f"[yellow]→ 需配置凭据: {', '.join(cred_channels)}[/yellow]")
+        console.print("[dim]  编辑 config.yaml 填入凭据，或重新运行 ai-content-hub init[/dim]")
+    console.print("[dim]→ 解析微信文章: ai-content-hub parse \"微信文章URL\"[/dim]")
+    console.print("[dim]→ 记录灵感: ai-content-hub note \"突然想到...\"[/dim]")
 
 
 # ─── scan ────────────────────────────────────────────────────────
