@@ -138,8 +138,9 @@ class ZsxqChannel(BaseChannel):
                             owner = talk.get("owner", {})
                             author = owner.get("name", "") if isinstance(owner, dict) else ""
 
-                            # 提取时间
-                            created = topic.get("create_time", "")
+                            # 提取时间（转为人类可读格式）
+                            raw_time = topic.get("create_time", "")
+                            created = ContentItem._format_iso(raw_time) if raw_time else ""
 
                             # 互动数据
                             likes_count = topic.get("likes_count", 0) or 0

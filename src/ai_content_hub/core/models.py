@@ -92,6 +92,24 @@ class ContentItem:
             "is_sensitive": self.is_sensitive,
         }
 
+    @staticmethod
+    def _format_iso(iso_str: str) -> str:
+        """将ISO时间格式转为人类可读格式
+        
+        2026-03-31T18:50:53.396+0800 → 2026-03-31 18:50:53
+        2026-04-17T21:29:54Z → 2026-04-17 21:29:54
+        2026-04-20 23:14:43 → 2026-04-20 23:14:43 (已可读，直接返回)
+        """
+        if not iso_str or "T" not in iso_str:
+            return iso_str
+        try:
+            parts = iso_str.split("T")
+            date_part = parts[0]
+            time_part = parts[1].split(".")[0].split("+")[0].rstrip("Z")
+            return f"{date_part} {time_part}"
+        except Exception:
+            return iso_str
+
     def to_markdown(self) -> str:
         """转为Markdown格式"""
         from datetime import datetime
@@ -108,7 +126,7 @@ class ContentItem:
         if self.author:
             meta_parts.append(f"作者: {self.author}")
         if self.created_at:
-            meta_parts.append(f"创建: {self.created_at}")
+            meta_parts.append(f"创建: {self._format_iso(self.created_at)}")
         if self.url:
             meta_parts.append(f"[原文链接]({self.url})")
 
