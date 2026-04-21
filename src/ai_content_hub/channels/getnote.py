@@ -52,7 +52,7 @@ class GetNoteChannel(BaseChannel):
         }
 
     async def scan(self, incremental: bool = True) -> AsyncIterator[ContentItem]:
-        """同步Get笔记"""
+        """同步Get笔记（增量早停 + 内容去重）"""
         if not self.validate_config():
             logger.error("未配置Get笔记API Key或Client ID")
             return
@@ -60,6 +60,7 @@ class GetNoteChannel(BaseChannel):
         headers = self._get_headers()
         sync_types = self.config.get("sync_note_types", ["plain_text", "link", "recorder_audio", "img_text"])
         processed = set(self.config.get("_processed_ids", []))
+        content_hashes = set(self.config.get("_content_hashes", []))
 
         async with httpx.AsyncClient(follow_redirects=True, timeout=30) as client:
             cursor = 0
@@ -81,6 +82,13 @@ class GetNoteChannel(BaseChannel):
                     if not notes:
                         break
 
+                    # 增量早停：本页全部已处理则不继续翻页
+                    if incremental:
+                        page_ids = [f"getnote_{n.get('note_id', '')}" for n in notes if n.get("note_type", "") in sync_types]
+                        if page_ids and all(pid in processed for pid in page_ids):
+                            logger.info("增量早停：本页全部已处理，跳过剩余页面")
+                            break
+
                     for note in notes:
                         note_type = note.get("note_type", "")
                         if note_type not in sync_types:
@@ -89,32 +97,42 @@ class GetNoteChannel(BaseChannel):
                         note_id = str(note.get("note_id", ""))
                         item_id = f"getnote_{note_id}"
 
+                        # 去重1: ID去重
                         if incremental and item_id in processed:
                             continue
 
-                        title = note.get("title", "") or note.get("content", "")[:40].replace("\n", " ")
+                        # 去重2: 内容去重（标题+内容前500字符hash）
                         content = note.get("content", "")
-                        created_at = note.get("created_at", "")
+                        title = note.get("title", "")
+                        import hashlib
+                        dedup_key = hashlib.md5(f"{title}|{content[:500]}".encode()).hexdigest()[:12]
+                        if incremental and dedup_key in content_hashes:
+                            logger.debug(f"内容去重跳过: {item_id}")
+                            processed.add(item_id)  # 标记ID避免重复检查
+                            continue
 
                         # 标签
                         tags = [t.get("name", "") for t in note.get("tags", []) if t.get("name")]
 
                         yield ContentItem(
                             id=item_id,
-                            title=title,
+                            title=title or content[:40].replace("\n", " "),
                             content=content,
                             channel=Channel.GETNOTE,
                             content_type=self.NOTE_TYPE_MAP.get(note_type, ContentType.NOTE),
                             url="",
                             author="",
-                            created_at=created_at,
+                            created_at=note.get("created_at", ""),
                             tags=tags,
                             metadata={
                                 "note_id": note_id,
                                 "note_type": note_type,
                                 "source": note.get("source", ""),
+                                "content_hash": dedup_key,
                             },
                         )
+                        processed.add(item_id)
+                        content_hashes.add(dedup_key)
 
                     if not data.get("data", {}).get("has_more"):
                         break
